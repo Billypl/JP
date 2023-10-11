@@ -39,6 +39,7 @@ procedure Simulation is
       -- Give the Consumer an identity
       entry Start(Consumer_Number: in Consumer_Type;
                   Consumption_Time: in Integer);
+      entry Czekanie;
    end Consumer;
 
    -- In the Buffer, products are assemblied into an assembly
@@ -116,9 +117,42 @@ procedure Simulation is
          Assembly_Type := Random_Assembly.Random(G2);
          -- take an assembly for consumption
          B.Deliver(Assembly_Type, Assembly_Number);
-         Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
+         
+         --B.Deliver sprawdza czy można dostarczyć dane zamówienie, jeśli nie zwracane jest zamównie nr. 0
+         --poniżej sprawdzamy czy to 0, jak tak wchodzimy w selecta
+         --select nie działa poprawnie, ale idk dlaczego :((
+   
+         if Assembly_Number = 0 then
+            Put_Line(Consumer_Name(Consumer_Nb) & ": Będę czekać na: " &
+                    Assembly_Name(Assembly_Type)); -- komunikat o czekaniu
+            
+            select -- ta część w teorii powinna odpowiadać za czekanie i odebranie zamówienia (?)
+               B.Deliver(Assembly_Type, Assembly_Number);
+               if Assembly_Number = 0 then
+                  Put_Line(Consumer_Name(Consumer_Nb) & ": Czekam");
+               else
+                  Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
+                   Assembly_Name(Assembly_Type) & " number " &
+                             Integer'Image(Assembly_Number));
+               end if;
+               
+            or delay 10.0; --po 3 sek. spierdala
+                   B.Deliver(Assembly_Type, Assembly_Number);
+               if Assembly_Number = 0 then
+                  Put_Line(Consumer_Name(Consumer_Nb) & ": Wychodzę");
+               else
+                  Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
+                   Assembly_Name(Assembly_Type) & " number " &
+                             Integer'Image(Assembly_Number));
+               end if;
+            end select;
+            Put_Line(Consumer_Name(Consumer_Nb) & ": Wyszło z selecta"); --sprawdzam gdzie jest koniec selecta
+            
+         else
+            Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
                     Assembly_Name(Assembly_Type) & " number " &
-                    Integer'Image(Assembly_Number));
+                       Integer'Image(Assembly_Number));
+         end if;
       end loop;
       
    end Consumer;
@@ -208,8 +242,8 @@ procedure Simulation is
       procedure Storage_Contents is
       begin
          for W in Product_Type loop
-            Put_Line("Storage contents: " & Integer'Image(Storage(W)) & " "
-                     & Product_Name(W));
+           Put_Line("Storage contents: " & Integer'Image(Storage(W)) & " "
+                    & Product_Name(W));
          end loop;
       end Storage_Contents;
 
@@ -223,7 +257,7 @@ procedure Simulation is
          
          accept Take(Product: in Product_Type; Number: in Integer) do
             if Can_Accept(Product) then
-               Put_Line("Accepted product " & Product_Name(Product) & " number " & Integer'Image(Number));
+               --Put_Line("Accepted product " & Product_Name(Product) & " number " & Integer'Image(Number));
                Storage(Product) := Storage(Product) + 1;
                Items_In_Storage_Count := Items_In_Storage_Count + 1;
             else
@@ -231,7 +265,7 @@ procedure Simulation is
             end if;
          end Take;
          
-         Storage_Contents;
+        -- Storage_Contents;
          
          accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
             if Can_Deliver(Assembly) then
@@ -249,7 +283,7 @@ procedure Simulation is
             end if;
          end Deliver;
          
-         Storage_Contents;
+         --Storage_Contents;
       end loop;
       
    end Buffer;
@@ -265,5 +299,3 @@ begin
    
 
 end Simulation;
-
-
