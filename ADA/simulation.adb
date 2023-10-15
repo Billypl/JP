@@ -19,9 +19,9 @@ procedure Simulation is
    subtype Consumer_Type is Integer range 1 .. Number_Of_Consumers;
 
    Product_Name: constant array (Product_Type) of String(1 .. 6)
-     := ("Papric", "Cheese", "Fungus", "Salami", "Onions");
+     := ("Oliwki", "Szynka", "Grzyby", "Salami", "Cebula");
    Assembly_Name: constant array (Assembly_Type) of String(1 .. 10)
-     := ("Fromaggera", "Willagersa", "Mushroomer");
+     := ("KingOfMeat", "Willagersa", "Wegetarino");
 
    package Random_Assembly is new
      Ada.Numerics.Discrete_Random(Assembly_Type);
@@ -39,7 +39,6 @@ procedure Simulation is
       -- Give the Consumer an identity
       entry Start(Consumer_Number: in Consumer_Type;
                   Consumption_Time: in Integer);
-      entry Czekanie;
    end Consumer;
 
    -- In the Buffer, products are assemblied into an assembly
@@ -48,6 +47,7 @@ procedure Simulation is
       entry Take(Product: in Product_Type; Number: in Integer);
       -- Deliver an assembly provided there are enough products for it
       entry Deliver(Assembly: in Assembly_Type; Number: out Integer);
+      entry Pieczenie_Pizzy;
    end Buffer;
 
    P: array ( 1 .. Number_Of_Products ) of Producer;
@@ -75,11 +75,10 @@ procedure Simulation is
          Product_Type_Number := Product;
          Production := Production_Time;
       end Start;
-      Put_Line("Started producer of " & Product_Name(Product_Type_Number));
+      Put_Line("Rozpoczęto produkcję " & Product_Name(Product_Type_Number));
       loop
          delay Duration(Random_Production.Random(G)); --  symuluj produkcję
-         Put_Line("Produced product " & Product_Name(Product_Type_Number)
-                  & " number "  & Integer'Image(Product_Count));
+         Put_Line("Wyprodukowano " & Product_Name(Product_Type_Number));
          -- Accept for storage
          B.Take(Product_Type_Number, Product_Count);
          Product_Count := Product_Count + 1;
@@ -111,26 +110,22 @@ procedure Simulation is
          Consumer_Nb := Consumer_Number;
          Consumption := Consumption_Time;
       end Start;
-      Put_Line("Started consumer " & Consumer_Name(Consumer_Nb));
+      Put_Line("Powstał klient " & Consumer_Name(Consumer_Nb));
       loop
          delay Duration(Random_Consumption.Random(G)); --  simulate consumption
          Assembly_Type := Random_Assembly.Random(G2);
          -- take an assembly for consumption
          B.Deliver(Assembly_Type, Assembly_Number);
-         if Assembly_Number = 0 then
-            Put_Line(Consumer_Name(Consumer_Nb) & ": Będę czekać na: " &
-                    Assembly_Name(Assembly_Type) & "3 sekundy"); -- komunikat o czekaniu
-
-            select -- ta część w teorii powinna odpowiadać za czekanie i odebranie zamówienia (?)
-               B.Deliver(Assembly_Type, Assembly_Number);
-            or delay 3.0;
-               Put_Line(Consumer_Name(Consumer_Nb) & ": Spierdalam");
-            end select;
-            Put_Line(Consumer_Name(Consumer_Nb) & ": Wyszło z selecta");
+         if Assembly_Number /= 0 then
+            select
+               B.Pieczenie_Pizzy;
+               Put_Line(Consumer_Name(Consumer_Nb) & " odebrał pizze " &
+                    Assembly_Name(Assembly_Type));
+            or delay 7.0;
+               Put_Line(Consumer_Name(Consumer_Nb) & ": Idę sobie, za długo robicie moją pizze");
+             end select;
          else
-            Put_Line(Consumer_Name(Consumer_Nb) & ": taken assembly " &
-                    Assembly_Name(Assembly_Type) & " number " &
-                       Integer'Image(Assembly_Number));
+            Put_Line(Consumer_Name(Consumer_Nb) & ": Nie możecie zrobić mojej pizzy, to wychodę.");
          end if;
       end loop;
 
@@ -144,9 +139,9 @@ procedure Simulation is
       Storage: Storage_type
         := (0, 0, 0, 0, 0);
       Assembly_Content: array(Assembly_Type, Product_Type) of Integer
-        := ((0, 4, 0, 0, 0),
-            (1, 1, 1, 2, 1),
-            (0, 1, 3, 0, 1)); -- SKŁADNIKI (ILOŚĆ)
+        := ((0, 2, 0, 2, 0),
+            (1, 1, 1, 1, 1),
+            (2, 0, 2, 0, 2)); -- SKŁADNIKI (ILOŚĆ)
       Max_Assembly_Content: array(Product_Type) of Integer;
       Assembly_Number: array(Assembly_Type) of Integer
         := (1, 1, 1);
@@ -222,7 +217,7 @@ procedure Simulation is
       begin
          Put_Line("---------------------------------------------");
          for W in Product_Type loop
-           Put_Line("Storage contents: " & Integer'Image(Storage(W)) & " "
+           Put_Line("Zawarość magazynu: " & Integer'Image(Storage(W)) & " "
                     & Product_Name(W));
          end loop;
          Put_Line("---------------------------------------------");
@@ -235,48 +230,57 @@ procedure Simulation is
       Setup_Variables;
 
       loop
+         select
+            accept Take(Product: in Product_Type; Number: in Integer) do
+               if Can_Accept(Product) then
+                  Put_Line("Dostarczono produkt " & Product_Name(Product) & " do magazynu.");
+                  Storage(Product) := Storage(Product) + 1;
+                  Items_In_Storage_Count := Items_In_Storage_Count + 1;
+                  --  else
+                  --     for W in Product_Type loop
+                  --        if Storage(W) > Max_Assembly_Content(W) then
+                  --           Storage(W) := Storage(W) - 1;
+                  --           Put_Line("Przeterminowal sie produkt: " & Product_Name(Product) & " i został wyrzucony");
+                  --           Storage(Product) := Storage(Product) + 1;
+                  --           Items_In_Storage_Count := Items_In_Storage_Count + 1;
+                  --           exit;
+                  --        end if;
+                  --     end loop;
 
-         accept Take(Product: in Product_Type; Number: in Integer) do
-            if Can_Accept(Product) then
-               --Put_Line("Accepted product " & Product_Name(Product) & " number " & Integer'Image(Number));
-               Storage(Product) := Storage(Product) + 1;
-               Items_In_Storage_Count := Items_In_Storage_Count + 1;
-            else
-               for W in Product_Type loop
-                  if Storage(W) > Max_Assembly_Content(W) then
-                     Storage(W) := Storage(W) - 1;      
-                     Put_Line("Przeterminowal sie produkt: " & Product_Name(Product) & " i został wyrzucony"));
-                     Storage(Product) := Storage(Product) + 1;
-                     Items_In_Storage_Count := Items_In_Storage_Count + 1;
-                     exit;
-                  end if;
-               end loop;
-
-            end if;
-         end Take;
-
-        --Storage_Contents;
+               end if;
+            end Take;
+         or
 
          accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
-            Number := 0;
-            while Number = 0 loop
-               if Can_Deliver(Assembly) then
-                  Put_Line("Delivered assembly " & Assembly_Name(Assembly) & " number " &
-                             Integer'Image(Assembly_Number(Assembly)));
-                  for W in Product_Type loop
-                     Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
-                     Items_In_Storage_Count := Items_In_Storage_Count - Assembly_Content(Assembly, W);
-                  end loop;
-                  Number := Assembly_Number(Assembly);
-                  Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
-               else
-                  --Put_Line("Needed products for assembly " & Assembly_Name(Assembly));
-                  Number := 0;
+            if Can_Deliver(Assembly) then
+               Put_Line("Zrobiono pizze " & Assembly_Name(Assembly));
+               for W in Product_Type loop
+                  Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
+                  Items_In_Storage_Count := Items_In_Storage_Count - Assembly_Content(Assembly, W);
+               end loop;
+               Number := Assembly_Number(Assembly);
+               Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
+            else
+               --Put_Line("Needed products for assembly " & Assembly_Name(Assembly));
+               Number := 0;
                end if;
-            end loop;
-         end Deliver;
-
-        --Storage_Contents;
+            
+            end Deliver;
+         or
+            accept Pieczenie_Pizzy do
+               for n in 1..5 loop
+                  Put_Line("Pizza się piecze, pozostało " & Integer'Image(6-n) & " minut");
+                  delay 1.0;
+               end loop;
+            end Pieczenie_Pizzy;
+            
+         or delay 2.0;
+            Put_Line("Nic się nie dzieje");
+         end select;
+         
+          
+         
+        Storage_Contents;
       end loop;
 
    end Buffer;
