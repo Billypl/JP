@@ -1,7 +1,20 @@
--- A skeleton of a program for an assignment in programming languages
--- The students should rename the tasks of producers, consumers, and the buffer
--- Then, they should change them so that they would fit their assignments
--- They should also complete the code with constructions that lack there
+-- Autorzy:
+-- Hanna Banasiak  193078
+-- Michał Pawiłojć 193159
+
+-- Symulacja polega na prowadzeniu pizzerii jednopiecowej.
+-- Dostawcy dostarczają składniki potrzebne do przygotowania pizzy.
+-- Klienci zamawiają różne pizze.
+--    1. Gdy nie ma składników do przygotowania pizzy, wychodzą.
+--    2. Gdy składniki są, pizza jest przygotowywana.
+--    3. Gdy składniki są, lecz inna pizza jest w trakcie przygotowywania, czekają Max_Czas_Czekania_Na_Pizze,
+--       w przypadku przekroczenia czasu oczekiwania, klient wychodzi.
+-- (Dla lepszej czytelności wydarzenia klientów oznaczone zostały '###' na początku komunikatu)
+-- Pizzeria_Magazyn odpowiedzialna jest za obsługę składników: przyjęcie do magazynu i przygotowanie do zamówienia.
+-- Pizzeria_Piec odpowiedzialna jest za pieczenie pizzy.
+-- (Piec jest jeden, co pozwala na pieczenie tylko jednej pizzy naraz)
+
+
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Integer_Text_IO;
 with Ada.Numerics.Discrete_Random;
@@ -9,10 +22,12 @@ with Ada.Numerics.Discrete_Random;
 
 procedure Simulation is
 
----STAŁE-------------------------------------------------------------------------------------
+   ---STAŁE-------------------------------------------------------------------------------------
    Number_Of_Products: constant Integer := 5;
    Number_Of_Assemblies: constant Integer := 3;
    Number_Of_Consumers: constant Integer := 2;
+   Czas_Pieczenia_Pizzy: constant Integer := 8;
+   Max_Czas_Czekania_Na_Pizze: constant Duration := 4.0;
 
    subtype Product_Type is Integer range 1 .. Number_Of_Products;
    subtype Assembly_Type is Integer range 1 .. Number_Of_Assemblies;
@@ -27,42 +42,39 @@ procedure Simulation is
      Ada.Numerics.Discrete_Random(Assembly_Type);
    type My_Str is new String(1 .. 256);
 
----DEKLARACJE----------------------------------------------------------------------------------
-   -- Producer produces determined product
-   task type Producer is
-      -- Give the Producer an identity, i.e. the product type
+   ---DEKLARACJE----------------------------------------------------------------------------------
+   task type Dostawcy is
       entry Start(Product: in Product_Type; Production_Time: in Integer);
-   end Producer;
+   end Dostawcy;
 
-   -- Consumer gets an arbitrary assembly of several products from the buffer
-   task type Consumer is
-      -- Give the Consumer an identity
+   task type Klient is
       entry Start(Consumer_Number: in Consumer_Type;
                   Consumption_Time: in Integer);
-   end Consumer;
+   end Klient;
 
-   -- In the Buffer, products are assemblied into an assembly
-   task type Buffer is
-      -- Accept a product to the storage provided there is a room for it
-      entry Take(Product: in Product_Type; Number: in Integer);
-      -- Deliver an assembly provided there are enough products for it
-      entry Deliver(Assembly: in Assembly_Type; Number: out Integer);
+   task type Pizzeria_Magazyn is
+      entry Wez_do_magazynu(Product: in Product_Type; Number: in Integer);
+      entry Zbierz_skladniki(Assembly: in Assembly_Type; Number: out Integer);
+   end Pizzeria_Magazyn;
+
+   task type Pizzeria_Piec is
       entry Pieczenie_Pizzy;
-   end Buffer;
+   end Pizzeria_Piec;
 
-   P: array ( 1 .. Number_Of_Products ) of Producer;
-   K: array ( 1 .. Number_Of_Consumers ) of Consumer;
-   B: Buffer;
+   P: array ( 1 .. Number_Of_Products ) of Dostawcy;
+   K: array ( 1 .. Number_Of_Consumers ) of Klient;
+   PM: Pizzeria_Magazyn;
+   PP: Pizzeria_Piec;
 
----DEFINICJE-------------------------------------------------------------------------------------
+   ---DEFINICJE-------------------------------------------------------------------------------------
 
 
----DEFINICJE--PRODUCER---------------------------------------------------------------------------
-   task body Producer is
+   ---DEFINICJE--PRODUCER---------------------------------------------------------------------------
+   task body Dostawcy is
 
       subtype Production_Time_Range is Integer range 3 .. 6;
       package Random_Production is new Ada.Numerics.Discrete_Random(Production_Time_Range);
-      G: Random_Production.Generator;	--  generator liczb losowych
+      G: Random_Production.Generator;
       Product_Type_Number: Integer;
       Product_Count: Integer;
       Production: Integer;
@@ -70,29 +82,28 @@ procedure Simulation is
    begin -- KONSTRUKTOR
 
       accept Start(Product: in Product_Type; Production_Time: in Integer) do
-         Random_Production.Reset(G);	--  start random number generator
+         Random_Production.Reset(G);
          Product_Count := 1;
          Product_Type_Number := Product;
          Production := Production_Time;
       end Start;
-      Put_Line("Rozpoczęto produkcję " & Product_Name(Product_Type_Number));
+      Put_Line("Zatrudnienie dostawcy produktu: " & Product_Name(Product_Type_Number));
       loop
-         delay Duration(Random_Production.Random(G)); --  symuluj produkcję
-         Put_Line("Wyprodukowano " & Product_Name(Product_Type_Number));
-         -- Accept for storage
-         B.Take(Product_Type_Number, Product_Count);
+         delay Duration(Random_Production.Random(G));
+         Put_Line("Przygotowano do transportu produkt: " & Product_Name(Product_Type_Number));
+         PM.Wez_do_magazynu(Product_Type_Number, Product_Count);
          Product_Count := Product_Count + 1;
       end loop;
 
-   end Producer;
+   end Dostawcy;
 
- ---DEFINICJE--CONSUMER---------------------------------------------------------------------------
-   task body Consumer is
+   ---DEFINICJE--CONSUMER---------------------------------------------------------------------------
+   task body Klient is
 
       subtype Consumption_Time_Range is Integer range 4 .. 8;
       package Random_Consumption is new Ada.Numerics.Discrete_Random(Consumption_Time_Range);
-      G: Random_Consumption.Generator;	--  random number generator (time)
-      G2: Random_Assembly.Generator;	--  also (assemblies)
+      G: Random_Consumption.Generator;
+      G2: Random_Assembly.Generator;
       Consumer_Nb: Consumer_Type;
       Assembly_Number: Integer;
       Consumption: Integer;
@@ -105,34 +116,37 @@ procedure Simulation is
 
       accept Start(Consumer_Number: in Consumer_Type;
                    Consumption_Time: in Integer) do
-         Random_Consumption.Reset(G);	--  ustaw generator
-         Random_Assembly.Reset(G2);	   --  też
+         Random_Consumption.Reset(G);
+         Random_Assembly.Reset(G2);
          Consumer_Nb := Consumer_Number;
          Consumption := Consumption_Time;
       end Start;
       Put_Line("Powstał klient " & Consumer_Name(Consumer_Nb));
       loop
-         delay Duration(Random_Consumption.Random(G)); --  simulate consumption
+         delay Duration(Random_Consumption.Random(G));
          Assembly_Type := Random_Assembly.Random(G2);
-         -- take an assembly for consumption
-         B.Deliver(Assembly_Type, Assembly_Number);
-         if Assembly_Number /= 0 then
-            select
-               B.Pieczenie_Pizzy;
-               Put_Line(Consumer_Name(Consumer_Nb) & " odebrał pizze " &
-                    Assembly_Name(Assembly_Type));
-            or delay 7.0;
-               Put_Line(Consumer_Name(Consumer_Nb) & ": Idę sobie, za długo robicie moją pizze");
-             end select;
-         else
-            Put_Line(Consumer_Name(Consumer_Nb) & ": Nie możecie zrobić mojej pizzy, to wychodę.");
+
+         Put_Line("### Klient " & Consumer_Name(Consumer_Nb) & " zamówił pizze " & Assembly_Name(Assembly_Type));
+         PM.Zbierz_skladniki(Assembly_Type, Assembly_Number);
+
+         if Assembly_Number /= 0 then -- sprawdzamy, czy nie zwrócono 0 -> brak możliwości stworzenia zestawu
+
+            select -- 1.Są składniki, pizza wstawiona do pieca
+               PP.Pieczenie_Pizzy;
+               Put_Line("### Klient " & Consumer_Name(Consumer_Nb) & " odebrał pizze " & Assembly_Name(Assembly_Type));
+            or delay Max_Czas_Czekania_Na_Pizze; -- 2. Są składniki, ale piec jest zbyt długo zajęty
+               Put_Line("### " & Consumer_Name(Consumer_Nb) & ": Idę sobie, za długo robicie moją pizze");
+            end select;
+
+         else -- 3. Nie ma składników
+            Put_Line("### " & Consumer_Name(Consumer_Nb) & ": Nie możecie zrobić mojej pizzy, to wychodę.");
          end if;
       end loop;
 
-   end Consumer;
+   end Klient;
 
----DEFINICJE--BUFFER---------------------------------------------------------------------------
-   task body Buffer is
+   ---DEFINICJE--BUFFER---------------------------------------------------------------------------
+   task body Pizzeria_Magazyn is
 
       Storage_Capacity: constant Integer := 30;
       type Storage_type is array (Product_Type) of Integer;
@@ -159,7 +173,7 @@ procedure Simulation is
          end loop;
       end Setup_Variables;
 
-      function Can_Accept(Product: Product_Type) return Boolean is
+      function Czy_jest_miejsce(Product: Product_Type) return Boolean is
          FreeRoomInStorage: Integer;		        -- free room in the storage
          Needed: array(Product_Type) of Integer; -- how many products are needed for production of arbitrary assembly
          Needed_room: Integer;                   -- how much room is needed in storage to produce arbitrary assembly
@@ -201,9 +215,9 @@ procedure Simulation is
             return False;
          end if;
 
-      end Can_Accept;
+      end Czy_jest_miejsce;
 
-      function Can_Deliver(Assembly: Assembly_Type) return Boolean is
+      function Czy_sa_skladniki(Assembly: Assembly_Type) return Boolean is
       begin
          for W in Product_Type loop
             if Storage(W) < Assembly_Content(Assembly, W) then
@@ -211,81 +225,72 @@ procedure Simulation is
             end if;
          end loop;
          return True;
-      end Can_Deliver;
+      end Czy_sa_skladniki;
 
-      procedure Storage_Contents is
+      procedure Zawartosc_Magazynu is
       begin
          Put_Line("---------------------------------------------");
          for W in Product_Type loop
-           Put_Line("Zawarość magazynu: " & Integer'Image(Storage(W)) & " "
-                    & Product_Name(W));
+            Put_Line("Zawartość magazynu: " & Integer'Image(Storage(W)) & " "
+                     & Product_Name(W));
          end loop;
          Put_Line("---------------------------------------------");
-      end Storage_Contents;
+      end Zawartosc_Magazynu;
 
 
-   begin -- KONSTRUKTOR
+   begin -- "KONSTRUKTOR"
 
-      Put_Line("Buffer started");
+      Put_Line("Otwarto pizzerię");
       Setup_Variables;
 
       loop
          select
-            accept Take(Product: in Product_Type; Number: in Integer) do
-               if Can_Accept(Product) then
+            accept Wez_do_magazynu(Product: in Product_Type; Number: in Integer) do
+               if Czy_jest_miejsce(Product) then
                   Put_Line("Dostarczono produkt " & Product_Name(Product) & " do magazynu.");
                   Storage(Product) := Storage(Product) + 1;
                   Items_In_Storage_Count := Items_In_Storage_Count + 1;
-                  --  else
-                  --     for W in Product_Type loop
-                  --        if Storage(W) > Max_Assembly_Content(W) then
-                  --           Storage(W) := Storage(W) - 1;
-                  --           Put_Line("Przeterminowal sie produkt: " & Product_Name(Product) & " i został wyrzucony");
-                  --           Storage(Product) := Storage(Product) + 1;
-                  --           Items_In_Storage_Count := Items_In_Storage_Count + 1;
-                  --           exit;
-                  --        end if;
-                  --     end loop;
-
+                  Zawartosc_Magazynu;
                end if;
-            end Take;
+            end Wez_do_magazynu;
          or
 
-         accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
-            if Can_Deliver(Assembly) then
-               Put_Line("Zrobiono pizze " & Assembly_Name(Assembly));
-               for W in Product_Type loop
-                  Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
-                  Items_In_Storage_Count := Items_In_Storage_Count - Assembly_Content(Assembly, W);
-               end loop;
-               Number := Assembly_Number(Assembly);
-               Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
-            else
-               --Put_Line("Needed products for assembly " & Assembly_Name(Assembly));
-               Number := 0;
+            accept Zbierz_skladniki(Assembly: in Assembly_Type; Number: out Integer) do
+               if Czy_sa_skladniki(Assembly) then
+                  Put_Line("Zabrano składniki na pizze " & Assembly_Name(Assembly));
+                  for W in Product_Type loop
+                     Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
+                     Items_In_Storage_Count := Items_In_Storage_Count - Assembly_Content(Assembly, W);
+                  end loop;
+                  Number := Assembly_Number(Assembly);
+                  Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
+                  Zawartosc_Magazynu;
+               else
+                  -- Jeśli nie można zebrać składników, zwraca kod 0
+                  Number := 0;
                end if;
-            
-            end Deliver;
-         or
-            accept Pieczenie_Pizzy do
-               for n in 1..5 loop
-                  Put_Line("Pizza się piecze, pozostało " & Integer'Image(6-n) & " minut");
-                  delay 1.0;
-               end loop;
-            end Pieczenie_Pizzy;
-            
-         or delay 2.0;
-            Put_Line("Nic się nie dzieje");
+
+            end Zbierz_skladniki;
+
          end select;
-         
-          
-         
-        Storage_Contents;
       end loop;
 
-   end Buffer;
+   end Pizzeria_Magazyn;
 
----DEFINICJE--MAIN---------------------------------------------------------------------------
+   task body Pizzeria_Piec is
+   begin
+
+      loop
+         accept Pieczenie_Pizzy do
+            for n in 1..Czas_Pieczenia_Pizzy loop
+               Put_Line("Pizza się piecze, pozostało " & Integer'Image(Czas_Pieczenia_Pizzy - n + 1) & " minut");
+               delay 1.0;
+            end loop;
+         end Pieczenie_Pizzy;
+      end loop;
+   end Pizzeria_Piec;
+
+   ---DEFINICJE--MAIN---------------------------------------------------------------------------
 begin
    for I in 1 .. Number_Of_Products loop
       P(I).Start(I, 10);
