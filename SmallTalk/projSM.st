@@ -88,7 +88,7 @@ Wielokat subclass: #Kwadrat
     !    
         
 Wielokat subclass: #Szesciakat
-	instanceVariableNames: 'Bok'
+	instanceVariableNames: 'Bok Srodek'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'JezykiProgramowania'!
@@ -104,6 +104,7 @@ Wielokat subclass: #Szesciakat
         	wierzcholki at: 4 put: bok@((3 sqrt)*bok).
         	wierzcholki at: 5 put: ((3/2)*bok)@(((3 sqrt)/2)*bok).
         	wierzcholki at: 6 put: bok@0.
+        	Srodek:= (bok/2)@(((3 sqrt)*bok)/2).
         	Bok:=bok
         ! 
     !
@@ -123,6 +124,17 @@ Wielokat subclass: #Szesciakat
         	"licz pole szeciakata"
         	^(( (3 * (3 sqrt)) / 2 )*(Bok squared))
         !
+        centruj
+           "petla z wierzcholkami"
+            wierzcholki do: 
+            [:wierzcholek | 
+                | index |
+                index := wierzcholki indexOf: wierzcholek.
+                wierzcholki at: index put: (wierzcholek x - Srodek x)@(wierzcholek y - Srodek y).
+                
+            ].
+        !
+        
     !    
         
 k := (Kwadrat new) initialize:2.
@@ -131,4 +143,8 @@ sz := (Szesciakat new) initialize: 2.
 
 Transcript show: sz pole printString; cr.
 sz2 := sz + k. "ważna jest kolejność sz + k, k + sz"
-Transcript show: sz pole printString.
+Transcript show: sz pole printString; cr.
+
+sz drukuj.
+sz centruj.
+sz drukuj.
