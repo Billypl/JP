@@ -87,39 +87,48 @@ Wielokat subclass: #Kwadrat
         !
     !    
         
-Wielokat subclass: #Szeciakat
-	instanceVariableNames: ''
+Wielokat subclass: #Szesciakat
+	instanceVariableNames: 'Bok'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'JezykiProgramowania'!
 
-    !Szeciakat methodsFor: 'initialize-release'!
+    !Szesciakat methodsFor: 'initialize-release'!
 
         initialize: bok
         	"tworz kwadrat o podanym boku"
         
-        	super initialize: 6 name: 'Szeciakat'.
-        	wierzcholki at: 2 put: bok@0.
-        	wierzcholki at: 3 put: bok@bok.
-        	wierzcholki at: 4 put: 0@bok.
+        	super initialize: 6 name: 'Szesciakat'.
+        	wierzcholki at: 2 put: (-1/2*bok)@((3 sqrt) / 2 * bok).
+        	wierzcholki at: 3 put: 0@((3 sqrt)*bok).
+        	wierzcholki at: 4 put: bok@((3 sqrt)*bok).
+        	wierzcholki at: 5 put: ((3/2)*bok)@(((3 sqrt)/2)*bok).
+        	wierzcholki at: 6 put: bok@0.
+        	Bok:=bok
         ! 
     !
 
-    !Szeciakat methodsFor: 'arithmetic'!
+    !Szesciakat methodsFor: 'arithmetic'!
         + figura
         	"dodaj 2 figury w sensie pola"
         	| p |
         	p:=self pole + figura pole.
-        	^(Szeciakat new) initialize: p sqrt
+        	Bok:= ((2*p)/(3*(3 sqrt))) sqrt.
+        	^(Szesciakat new) initialize: Bok
         !
     !
     
-    !Szeciakat methodsFor: 'actions'!
+    !Szesciakat methodsFor: 'actions'!
         pole
         	"licz pole szeciakata"
-        	^(wierzcholki at: 2) x squared
+        	^(( (3 * (3 sqrt)) / 2 )*(Bok squared))
         !
     !    
         
 k := (Kwadrat new) initialize:2.
-k drukuj.
+
+sz := (Szesciakat new) initialize: 2.
+
+Transcript show: sz pole printString; cr.
+sz2 := sz + k. "ważna jest kolejność sz + k, k + sz"
+Transcript show: sz pole printString.
