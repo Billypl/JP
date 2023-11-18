@@ -113,10 +113,9 @@ Wielokat subclass: #Szesciakat
     !Szesciakat methodsFor: 'arithmetic'!
         + figura
         	"dodaj 2 figury w sensie pola"
-        	| p w1 |
+        	| p |
         	p:=self pole + figura pole.
         	Bok:= ((2*p)/(3*(3 sqrt))) sqrt.
-        	w1:= wierzcholki at: 1 copy.
         	^(Szesciakat new) initialize: Bok
         !
     !
