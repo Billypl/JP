@@ -99,6 +99,7 @@ Wielokat subclass: #Szesciakat
         	"tworz kwadrat o podanym boku"
         
         	super initialize: 6 name: 'Szesciakat'.
+        
         	wierzcholki at: 2 put: (-1/2*bok)@((3 sqrt) / 2 * bok).
         	wierzcholki at: 3 put: 0@((3 sqrt)*bok).
         	wierzcholki at: 4 put: bok@((3 sqrt)*bok).
@@ -126,11 +127,9 @@ Wielokat subclass: #Szesciakat
         !
         centruj
            "petla z wierzcholkami"
-            wierzcholki do: 
-            [:wierzcholek | 
-                | index |
-                index := wierzcholki indexOf: wierzcholek.
-                wierzcholki at: index put: (wierzcholek x - Srodek x)@(wierzcholek y - Srodek y).
+            1 to: wierzcholki size do: 
+            [:index | 
+                wierzcholki at: index put: ((wierzcholki at: index) x - Srodek x)@((wierzcholki at: index) y - Srodek y).
                 
             ].
         !
@@ -141,10 +140,19 @@ k := (Kwadrat new) initialize:2.
 
 sz := (Szesciakat new) initialize: 2.
 
-Transcript show: sz pole printString; cr.
-sz2 := sz + k. "ważna jest kolejność sz + k, k + sz"
-Transcript show: sz pole printString; cr.
 
 sz drukuj.
+Transcript show: ' ';cr.
+Transcript show: sz pole printString; cr.
+ "ważna jest kolejność sz + k, k + sz"
+Transcript show: sz pole printString; cr.
+Transcript show: ' ';cr.
+
+
 sz centruj.
 sz drukuj.
+Transcript show: ' ';cr.
+sz2 := sz + k.
+sz2 drukuj.
+
+
