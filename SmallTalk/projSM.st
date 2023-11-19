@@ -17,6 +17,7 @@ Object subclass: #Wielokat
         	nazwa:=nowaNazwa.
         	wierzcholki:=Array new: liczbaWierzcholkow.
         	wierzcholki at: 1 put: 0@0.
+        	
         ! 
     !
     
@@ -43,18 +44,18 @@ Object subclass: #Wielokat
             [:wierzcholek | 
                 | index |
                 index := wierzcholki indexOf: wierzcholek.
-                Transcript show: 'Wierzcholek ', index printString, ': ', wierzcholek printString; cr.
+                Transcript show: '  Wierzcholek ', index printString, ': ', wierzcholek printString; cr.
                 
             ].
-            Transcript show: 'Srodek: ', Srodek printString; cr.
-            Transcript show: 'Pole = ', self pole printString; cr.
+            Transcript show: '  Srodek: ', Srodek printString; cr.
+            Transcript show: '  Pole = ', self pole printString; cr.
             Transcript cr.
         !   
-        centruj
-            Transcript show: '### Wycentrowano figurę ', self nazwa, ', środek figury znajdował się w punkcie (', Srodek printString,')'; cr.
+        wysrodkuj
+            Transcript show: '### Wysrodkowano figure ', self nazwa, ' (srodek figury znajdowal się w punkcie ', Srodek printString,')'; cr; cr.
         !
         + figura
-        	Transcript show: '### Dodano pole figury ', self nazwa, '(pole = ', self pole printString, ')' , ' oraz figury ', figura nazwa, '(pole = ', figura pole printString, ')'; cr.
+        	Transcript show: '### Dodano pole figury ', self nazwa, ' (pole = ', self pole printString, ')' , ' oraz figury ', figura nazwa, ' (pole = ', figura pole printString, ')'; cr; cr.
         !
         
     !
@@ -113,24 +114,24 @@ Wielokat subclass: #Kwadrat
         	"licz pole kwadratu"
         	^Bok squared
         !
-        centruj
-            super centruj.
+        wysrodkuj
+            super wysrodkuj.
             self initialize: 0@0 and: Bok
         !
     !    
         
-Wielokat subclass: #Szesciakat
+Wielokat subclass: #Szesciokat
 	instanceVariableNames: 'Bok'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'JezykiProgramowania'!
 
-    !Szesciakat methodsFor: 'initialize-release'!
+    !Szesciokat methodsFor: 'initialize-release'!
 
         initialize: srodek and: bok
         	"tworz kwadrat o podanym boku"
         
-        	super initialize: 6 name: 'Szesciakat'.
+        	super initialize: 6 name: 'Szesciokat'.
 
         	wierzcholki at: 2 put: (-1/2*bok)@((3 sqrt) / 2 * bok).
         	wierzcholki at: 3 put: 0@((3 sqrt)*bok).
@@ -139,7 +140,7 @@ Wielokat subclass: #Szesciakat
         	wierzcholki at: 6 put: bok@0.
         
         	
-        	"przesuniecie do srodka ukladu wpolrzednych"
+        	"przesuniecie do srodka ukladu wspolrzednych"
         	1 to: wierzcholki size do: 
             [:index | 
                 wierzcholki at: index put: ((wierzcholki at: index) x - (1/2 * bok))@((wierzcholki at: index) y - ((3 sqrt) / 2 * bok)).
@@ -158,7 +159,7 @@ Wielokat subclass: #Szesciakat
         !
     !
 
-    !Szesciakat methodsFor: 'arithmetic'!
+    !Szesciokat methodsFor: 'arithmetic'!
         + figura
         	"dodaj 2 figury w sensie pola"
         	| p |
@@ -166,18 +167,18 @@ Wielokat subclass: #Szesciakat
         	Bok:= ((2*p)/(3*(3 sqrt))) sqrt.
         	
         	super + figura.
-        	^(Szesciakat new) initialize: Srodek and: Bok
+        	^(Szesciokat new) initialize: Srodek and: Bok
         !
     !
     
-    !Szesciakat methodsFor: 'actions'!
+    !Szesciokat methodsFor: 'actions'!
         pole
-        	"licz pole szeciakata"
+        	"licz pole szeciokata"
         	^(( (3 * (3 sqrt)) / 2 )*(Bok squared))
         !
-        centruj
+        wysrodkuj
            "petla z wierzcholkami"
-            super centruj.
+            super wysrodkuj.
             self initialize: 0@0 and: Bok
         !
         drukuj
@@ -187,26 +188,33 @@ Wielokat subclass: #Szesciakat
         
     !    
         
-Transcript show: '*******************Kwadrat*******************'; cr.
-Transcript show: '*******************Dodawanie*******************'; cr.
+Transcript show: '*******************Kwadrat*******************'; cr; cr.
+
+"tworzenie dwóch kwadratów"
 k1 := (Kwadrat new) initialize: 3.
 k1 drukuj.
 k2 := (Kwadrat new) initialize: 4.
 k2 drukuj.
+
+"dodawanie pola"
 k3 := k1 + k2.
 k3 drukuj.
-Transcript show: '*******************Centrowanie*******************'; cr.
-k3 centruj.
+
+"wyśrodkowanie"
+k3 wysrodkuj.
 k3 drukuj.
 
 
-Transcript show: '*******************Szesciakat*******************'; cr.
-sz := (Szesciakat new) initialize: 2.
-Transcript show: '*******************Centrowanie*******************'; cr.
-sz drukuj.
-sz centruj.
+Transcript show: '*******************Szesciokat*******************'; cr; cr.
+
+"tworzenie sześciokąta"
+sz := (Szesciokat new) initialize: 2.
 sz drukuj.
 
-Transcript show: '*******************Dodawanie*******************'; cr.
+"wyśrodkowanie"
+sz wysrodkuj.
+sz drukuj.
+
+"dodawanie pola"
 sz2 := sz + k1.
 sz2 drukuj.
