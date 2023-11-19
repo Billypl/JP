@@ -50,6 +50,13 @@ Object subclass: #Wielokat
             Transcript show: 'Pole = ', self pole printString; cr.
             Transcript cr.
         !   
+        centruj
+            Transcript show: '### Wycentrowano figurę ', self nazwa, ', środek figury znajdował się w punkcie (', Srodek printString,')'; cr.
+        !
+        + figura
+        	Transcript show: '### Dodano pole figury ', self nazwa, '(pole = ', self pole printString, ')' , ' oraz figury ', figura nazwa, '(pole = ', figura pole printString, ')'; cr.
+        !
+        
     !
 
 
@@ -74,7 +81,7 @@ Wielokat subclass: #Kwadrat
         	"przesuniecie do srodka ukladu wpolrzednych"
         	1 to: wierzcholki size do: 
             [:index | 
-                wierzcholki at: index put: ((wierzcholki at: index) x - (1/2 * bok))@((wierzcholki at: index) y + (1/2 * bok)).
+                wierzcholki at: index put: ((wierzcholki at: index) x - (1/2 * bok))@((wierzcholki at: index) y - (1/2 * bok)).
             ].
         	
         	"przesuniecie o srodek"
@@ -87,7 +94,7 @@ Wielokat subclass: #Kwadrat
             Bok := bok.
         ! 
         initialize: bok 
-            self initialize: (1/2*bok)@(-1/2*bok) and: bok
+            self initialize: (1/2*bok)@(1/2*bok) and: bok
         !
     !
 
@@ -96,6 +103,7 @@ Wielokat subclass: #Kwadrat
         	"dodaj 2 figury w sensie pola"
         	| p |
         	p:=self pole + figura pole.
+        	super + figura.
         	^(Kwadrat new) initialize: Srodek and: p sqrt
         !
     !
@@ -106,6 +114,7 @@ Wielokat subclass: #Kwadrat
         	^Bok squared
         !
         centruj
+            super centruj.
             self initialize: 0@0 and: Bok
         !
     !    
@@ -133,7 +142,7 @@ Wielokat subclass: #Szesciakat
         	"przesuniecie do srodka ukladu wpolrzednych"
         	1 to: wierzcholki size do: 
             [:index | 
-                wierzcholki at: index put: ((wierzcholki at: index) x - (1/2 * bok))@((wierzcholki at: index) y + ((3 sqrt) / 2 * bok)).
+                wierzcholki at: index put: ((wierzcholki at: index) x - (1/2 * bok))@((wierzcholki at: index) y - ((3 sqrt) / 2 * bok)).
             ].
         	
         	"przesuniecie o srodek"
@@ -145,7 +154,7 @@ Wielokat subclass: #Szesciakat
         	Bok:=bok
         ! 
         initialize: bok
-            self initialize: (bok/2)@((3 sqrt) / -2 * bok) and: bok
+            self initialize: (bok/2)@((3 sqrt) / 2 * bok) and: bok
         !
     !
 
@@ -156,6 +165,7 @@ Wielokat subclass: #Szesciakat
         	p:= self pole + figura pole.
         	Bok:= ((2*p)/(3*(3 sqrt))) sqrt.
         	
+        	super + figura.
         	^(Szesciakat new) initialize: Srodek and: Bok
         !
     !
@@ -167,6 +177,7 @@ Wielokat subclass: #Szesciakat
         !
         centruj
            "petla z wierzcholkami"
+            super centruj.
             self initialize: 0@0 and: Bok
         !
         drukuj
@@ -177,12 +188,17 @@ Wielokat subclass: #Szesciakat
     !    
         
 Transcript show: '*******************Kwadrat*******************'; cr.
+Transcript show: '*******************Dodawanie*******************'; cr.
 k1 := (Kwadrat new) initialize: 3.
 k1 drukuj.
 k2 := (Kwadrat new) initialize: 4.
 k2 drukuj.
 k3 := k1 + k2.
 k3 drukuj.
+Transcript show: '*******************Centrowanie*******************'; cr.
+k3 centruj.
+k3 drukuj.
+
 
 Transcript show: '*******************Szesciakat*******************'; cr.
 sz := (Szesciakat new) initialize: 2.
