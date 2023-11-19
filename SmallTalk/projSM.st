@@ -95,17 +95,30 @@ Wielokat subclass: #Szesciakat
 
     !Szesciakat methodsFor: 'initialize-release'!
 
-        initialize: bok
+        initialize: srodek and: bok
         	"tworz kwadrat o podanym boku"
         
         	super initialize: 6 name: 'Szesciakat'.
-        
+
         	wierzcholki at: 2 put: (-1/2*bok)@((3 sqrt) / 2 * bok).
         	wierzcholki at: 3 put: 0@((3 sqrt)*bok).
         	wierzcholki at: 4 put: bok@((3 sqrt)*bok).
         	wierzcholki at: 5 put: ((3/2)*bok)@(((3 sqrt)/2)*bok).
         	wierzcholki at: 6 put: bok@0.
-        	Srodek:= (bok/2)@(((3 sqrt)*bok)/2).
+        
+        	Srodek:=srodek. "(bok/2)@(((3 sqrt)*bok)/2)"
+        	
+        	"przesuniecie do srodka ukladu wpolrzednych"
+        	1 to: wierzcholki size do: 
+            [:index | 
+                wierzcholki at: index put: ((wierzcholki at: index) x - (1/2 * bok))@((wierzcholki at: index) y + ((3 sqrt) / 2 * bok)).
+            ].
+        	
+        	"przesuniecie o srodek"
+            1 to: wierzcholki size do: 
+            [:index | 
+                wierzcholki at: index put: ((wierzcholki at: index) x + Srodek x)@((wierzcholki at: index) y + Srodek y).
+            ].
         	Bok:=bok
         ! 
     !
@@ -116,7 +129,8 @@ Wielokat subclass: #Szesciakat
         	| p |
         	p:=self pole + figura pole.
         	Bok:= ((2*p)/(3*(3 sqrt))) sqrt.
-        	^(Szesciakat new) initialize: Bok
+        	
+        	^(Szesciakat new) initialize: Srodek and: Bok
         !
     !
     
@@ -127,32 +141,23 @@ Wielokat subclass: #Szesciakat
         !
         centruj
            "petla z wierzcholkami"
-            1 to: wierzcholki size do: 
-            [:index | 
-                wierzcholki at: index put: ((wierzcholki at: index) x - Srodek x)@((wierzcholki at: index) y - Srodek y).
-                
-            ].
+            self initialize: 0@0 and: Bok
+        !
+        drukuj
+            super drukuj.
+            Transcript show: 'Srodek: ', Srodek printString; cr.
         !
         
     !    
         
 k := (Kwadrat new) initialize:2.
 
-sz := (Szesciakat new) initialize: 2.
-
-
+sz := (Szesciakat new) initialize: 1@-1.7320508075688772 and: 2. "szesciakat z wierzcholkiem jeden w 0@0"
+Transcript show: '////////////////////Centrowanie/////////////////////'; cr.
 sz drukuj.
-Transcript show: ' ';cr.
-Transcript show: sz pole printString; cr.
- "ważna jest kolejność sz + k, k + sz"
-Transcript show: sz pole printString; cr.
-Transcript show: ' ';cr.
-
-
 sz centruj.
 sz drukuj.
-Transcript show: ' ';cr.
+
+Transcript show: '////////////////////Dodawanie/////////////////////'; cr.
 sz2 := sz + k.
 sz2 drukuj.
-
-
